@@ -1,0 +1,87 @@
+name: freeipa
+type: charm
+title: FreeIPA
+summary: FreeIPA identity management server for Kubernetes.
+description: |
+  A Juju charm that deploys FreeIPA on Kubernetes. FreeIPA provides
+  centralized identity, authentication (Kerberos), authorization (LDAP),
+  DNS, and certificate management for Linux/UNIX environments.
+
+base: ubuntu@24.04
+build-base: ubuntu@24.04
+platforms:
+  amd64:
+
+parts:
+  charm:
+    source: .
+    plugin: uv
+    build-snaps:
+      - astral-uv
+
+containers:
+  freeipa:
+    resource: freeipa-image
+    mounts:
+      - storage: data
+        location: /data
+
+resources:
+  freeipa-image:
+    type: oci-image
+    description: FreeIPA server OCI image
+    upstream-source: freeipa/freeipa-server:almalinux-10
+
+storage:
+  data:
+    type: filesystem
+    minimum-size: 2G
+    description: Persistent storage for FreeIPA data, config, and logs.
+
+config:
+  options:
+    realm:
+      type: string
+      default: ""
+      description: |
+        Kerberos realm name (e.g. EXAMPLE.COM). If not set, derived
+        from the domain in uppercase.
+    domain:
+      type: string
+      default: ""
+      description: |
+        Primary DNS domain (e.g. example.com). If not set, derived
+        from the unit's FQDN.
+    admin-password:
+      type: string
+      default: ""
+      description: |
+        Password for the IPA admin user and Directory Manager.
+        Required before the server can be installed.
+    setup-dns:
+      type: boolean
+      default: true
+      description: Enable the integrated DNS server.
+    dns-forwarders:
+      type: string
+      default: "8.8.8.8"
+      description: |
+        Comma-separated list of DNS forwarder IP addresses.
+        Ignored if setup-dns is false. Set to empty string
+        for --no-forwarders (use root servers).
+    no-ntp:
+      type: boolean
+      default: true
+      description: |
+        Disable NTP configuration. Recommended for containers
+        where the host manages time.
+    extra-install-opts:
+      type: string
+      default: ""
+      description: |
+        Additional arguments passed to ipa-server-install
+        (space-separated).
+
+provides:
+  ldap:
+    interface: ldap
