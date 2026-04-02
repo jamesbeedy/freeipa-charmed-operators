@@ -1,0 +1,90 @@
+name: freeipa-server-k8s
+type: charm
+title: FreeIPA Server (K8s)
+summary: FreeIPA identity management server on Kubernetes.
+description: |
+  A Juju Kubernetes charm that deploys FreeIPA using the official
+  freeipa/freeipa-server container image via Pebble sidecar. Provides
+  centralized identity, authentication (Kerberos), authorization (LDAP),
+  DNS, and certificate management.
+
+assumes:
+  - juju >= 3.5
+
+base: ubuntu@24.04
+build-base: ubuntu@24.04
+platforms:
+  amd64:
+
+parts:
+  charm:
+    source: .
+    plugin: uv
+    build-snaps:
+      - astral-uv
+
+containers:
+  freeipa:
+    resource: freeipa-image
+    mounts:
+      - storage: data
+        location: /data
+
+resources:
+  freeipa-image:
+    type: oci-image
+    description: FreeIPA server OCI image
+    upstream-source: freeipa/freeipa-server:almalinux-9
+
+storage:
+  data:
+    type: filesystem
+    minimum-size: 2G
+    description: Persistent storage for FreeIPA data, config, and logs.
+
+config:
+  options:
+    realm:
+      type: string
+      default: ""
+      description: |
+        Kerberos realm name (e.g. EXAMPLE.COM). If not set, derived
+        from the domain in uppercase.
+    domain:
+      type: string
+      default: ""
+      description: |
+        Primary DNS domain (e.g. example.com). Required.
+    admin-password:
+      type: secret
+      description: |
+        Juju secret containing the IPA admin password.
+        Create: juju add-secret freeipa-admin password=<value>
+        Grant:  juju grant-secret freeipa-admin freeipa-server-k8s
+        Set:    juju config freeipa-server-k8s admin-password=secret:<id>
+    setup-dns:
+      type: boolean
+      default: true
+      description: Enable the integrated DNS server.
+    dns-forwarders:
+      type: string
+      default: "8.8.8.8"
+      description: |
+        Comma-separated list of DNS forwarder IP addresses.
+    no-ntp:
+      type: boolean
+      default: true
+      description: |
+        Disable NTP configuration.
+    extra-install-opts:
+      type: string
+      default: ""
+      description: |
+        Additional arguments passed to ipa-server-install
+        (space-separated).
+
+provides:
+  ldap:
+    interface: ldap
+  freeipa:
+    interface: freeipa

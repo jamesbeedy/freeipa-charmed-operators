@@ -1,0 +1,70 @@
+name: cephfs-share-k8s
+type: charm
+title: CephFS Share Proxy (K8s)
+summary: Publishes CephFS connection info for filesystem-client consumers.
+description: |
+  A Juju Kubernetes charm that acts as a proxy for an externally managed
+  CephFS filesystem. Configure it with the Ceph cluster FSID, monitor
+  hosts, filesystem name, and client credentials, and it will publish
+  the connection details via the filesystem_info interface.
+
+  This is the K8s equivalent of the machine cephfs-share charm, but
+  instead of running MicroCeph locally, it connects to an existing
+  Ceph cluster.
+
+assumes:
+  - juju >= 3.5
+
+base: ubuntu@24.04
+build-base: ubuntu@24.04
+platforms:
+  amd64:
+
+parts:
+  charm:
+    source: .
+    plugin: uv
+    build-snaps:
+      - astral-uv
+
+config:
+  options:
+    fsid:
+      type: string
+      default: ""
+      description: |
+        Ceph cluster FSID (UUID). Required.
+    monitor-hosts:
+      type: string
+      default: ""
+      description: |
+        Space-separated list of Ceph monitor host:port addresses
+        (e.g. "10.0.0.1:6789 10.0.0.2:6789"). Required.
+    fs-name:
+      type: string
+      default: "cephfs"
+      description: |
+        Name of the CephFS filesystem.
+    share-path:
+      type: string
+      default: "/"
+      description: |
+        Path within the CephFS to export.
+    client-user:
+      type: string
+      default: "fs-client"
+      description: |
+        Ceph user name authorized to access the filesystem.
+    client-key:
+      type: string
+      default: ""
+      description: |
+        Cephx key for the authorized client user (base64). Required.
+
+provides:
+  filesystem:
+    interface: filesystem_info
+
+peers:
+  cephfs-peers:
+    interface: cephfs_peers

@@ -1,0 +1,82 @@
+name: freeipa-server
+type: charm
+title: FreeIPA Server
+summary: FreeIPA identity management server deployed via Docker.
+description: |
+  A Juju machine charm that deploys FreeIPA using the official
+  freeipa/freeipa-server container image via Docker. FreeIPA provides
+  centralized identity, authentication (Kerberos), authorization (LDAP),
+  DNS, and certificate management for Linux/UNIX environments.
+
+base: ubuntu@24.04
+build-base: ubuntu@24.04
+platforms:
+  amd64:
+
+parts:
+  charm:
+    source: .
+    plugin: uv
+    build-snaps:
+      - astral-uv
+
+config:
+  options:
+    realm:
+      type: string
+      default: ""
+      description: |
+        Kerberos realm name (e.g. EXAMPLE.COM). If not set, derived
+        from the domain in uppercase.
+    domain:
+      type: string
+      default: ""
+      description: |
+        Primary DNS domain (e.g. example.com). If not set, derived
+        from the unit's FQDN.
+    admin-password:
+      type: secret
+      description: |
+        Juju secret containing the IPA admin password.
+        Create: juju add-secret freeipa-admin password=<value>
+        Grant:  juju grant-secret freeipa-admin freeipa-server
+        Set:    juju config freeipa-server admin-password=secret:<id>
+    setup-dns:
+      type: boolean
+      default: true
+      description: Enable the integrated DNS server.
+    dns-forwarders:
+      type: string
+      default: "8.8.8.8"
+      description: |
+        Comma-separated list of DNS forwarder IP addresses.
+        Ignored if setup-dns is false. Set to empty string
+        for --no-forwarders (use root servers).
+    no-ntp:
+      type: boolean
+      default: true
+      description: |
+        Disable NTP configuration. Recommended for containers
+        where the host manages time.
+    extra-install-opts:
+      type: string
+      default: ""
+      description: |
+        Additional arguments passed to ipa-server-install
+        (space-separated).
+    image:
+      type: string
+      default: "docker.io/freeipa/freeipa-server:almalinux-10"
+      description: |
+        FreeIPA server OCI image to use.
+    container-name:
+      type: string
+      default: "freeipa-server"
+      description: |
+        Name for the Docker container running FreeIPA.
+
+provides:
+  ldap:
+    interface: ldap
+  freeipa:
+    interface: freeipa

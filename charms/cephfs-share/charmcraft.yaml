@@ -1,0 +1,64 @@
+name: cephfs-share
+type: charm
+title: CephFS Shared Filesystem
+summary: Deploys MicroCeph and provides a CephFS filesystem for shared storage.
+description: |
+  A Juju machine charm that installs MicroCeph via snap, creates a CephFS
+  filesystem, and exposes it via the filesystem_info interface. Designed
+  for providing shared home directories backed by CephFS.
+
+  Deploy this charm, then relate it to the upstream filesystem-client
+  subordinate charm to mount the CephFS on machine units.
+
+base: ubuntu@24.04
+build-base: ubuntu@24.04
+platforms:
+  amd64:
+
+parts:
+  charm:
+    source: .
+    plugin: uv
+    build-snaps:
+      - astral-uv
+
+config:
+  options:
+    fs-name:
+      type: string
+      default: "cephfs"
+      description: |
+        Name of the CephFS filesystem to create.
+    client-user:
+      type: string
+      default: "fs-client"
+      description: |
+        Ceph user name for client access to the CephFS.
+    share-path:
+      type: string
+      default: "/"
+      description: |
+        Path within the CephFS to export.
+    osd-size:
+      type: string
+      default: "4G"
+      description: |
+        Size of each loop-backed OSD device.
+    osd-count:
+      type: int
+      default: 3
+      description: |
+        Number of loop-backed OSD devices to create.
+    microceph-channel:
+      type: string
+      default: "squid/stable"
+      description: |
+        Snap channel for the MicroCeph installation.
+
+provides:
+  filesystem:
+    interface: filesystem_info
+
+peers:
+  cephfs-peers:
+    interface: cephfs_peers

@@ -1,0 +1,76 @@
+name: freeipa-client
+type: charm
+title: FreeIPA Client
+summary: Subordinate charm that enrolls machines with a FreeIPA server.
+description: |
+  A Juju subordinate charm that installs and configures the FreeIPA client
+  on machine units. Configure it with the FreeIPA server hostname, domain,
+  realm, and admin password, then relate it to any machine charm via
+  juju-info to enroll that machine in the FreeIPA domain.
+
+base: ubuntu@24.04
+build-base: ubuntu@24.04
+platforms:
+  amd64:
+
+parts:
+  charm:
+    source: .
+    plugin: uv
+    build-snaps:
+      - astral-uv
+
+subordinate: true
+
+requires:
+  juju-info:
+    interface: juju-info
+    scope: container
+
+config:
+  options:
+    freeipa-server:
+      type: string
+      default: ""
+      description: |
+        FQDN or IP address of the FreeIPA server to enroll with.
+        Required before enrollment can proceed.
+    domain:
+      type: string
+      default: ""
+      description: |
+        FreeIPA domain name (e.g. example.com). Required.
+    realm:
+      type: string
+      default: ""
+      description: |
+        Kerberos realm (e.g. EXAMPLE.COM). If not set, derived
+        from domain in uppercase.
+    admin-password:
+      type: secret
+      description: |
+        Juju secret containing the IPA admin password for enrollment.
+        Create: juju add-secret freeipa-admin password=<value>
+        Grant:  juju grant-secret freeipa-admin freeipa-client
+        Set:    juju config freeipa-client admin-password=secret:<id>
+    mkhomedir:
+      type: boolean
+      default: true
+      description: |
+        Automatically create home directories for users on first login.
+    no-ntp:
+      type: boolean
+      default: false
+      description: |
+        Disable NTP configuration during client enrollment.
+    force-join:
+      type: boolean
+      default: false
+      description: |
+        Force re-enrollment even if the host is already enrolled.
+    extra-install-opts:
+      type: string
+      default: ""
+      description: |
+        Additional arguments passed to ipa-client-install
+        (space-separated).

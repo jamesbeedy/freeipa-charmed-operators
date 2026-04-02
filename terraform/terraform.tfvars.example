@@ -1,0 +1,6 @@
+model_name       = "freeipa-dev"
+freeipa_domain   = "freeipa.local"
+freeipa_realm    = "FREEIPA.LOCAL"
+freeipa_password = "FreeIPA2025!"
+keycloak_password = "Keycloak2025!"
+ubuntu_units     = 1

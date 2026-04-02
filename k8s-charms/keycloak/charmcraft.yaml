@@ -1,0 +1,114 @@
+name: keycloak-k8s
+type: charm
+title: Keycloak (K8s)
+summary: Keycloak identity provider on Kubernetes with FreeIPA LDAP federation.
+description: |
+  A Juju Kubernetes charm that deploys Keycloak via Pebble sidecar and
+  configures it with LDAP user federation against a FreeIPA server.
+
+assumes:
+  - juju >= 3.5
+
+base: ubuntu@24.04
+build-base: ubuntu@24.04
+platforms:
+  amd64:
+
+parts:
+  charm:
+    source: .
+    plugin: uv
+    build-snaps:
+      - astral-uv
+  templates:
+    plugin: dump
+    source: templates
+    organize:
+      "*": templates/
+
+containers:
+  keycloak:
+    resource: keycloak-image
+
+resources:
+  keycloak-image:
+    type: oci-image
+    description: Keycloak OCI image
+    upstream-source: quay.io/keycloak/keycloak:latest
+
+config:
+  options:
+    admin-username:
+      type: string
+      default: "admin"
+      description: Keycloak bootstrap admin username.
+    admin-password:
+      type: secret
+      description: |
+        Juju secret containing the Keycloak admin password.
+        Create: juju add-secret keycloak-admin password=<value>
+        Grant:  juju grant-secret keycloak-admin keycloak-k8s
+        Set:    juju config keycloak-k8s admin-password=secret:<id>
+    realm-name:
+      type: string
+      default: "freeipa"
+      description: Name of the Keycloak realm to create.
+    freeipa-server:
+      type: string
+      default: ""
+      description: FQDN or IP of the FreeIPA server for LDAP federation.
+    freeipa-domain:
+      type: string
+      default: ""
+      description: FreeIPA domain (e.g. freeipa.local).
+    freeipa-admin-password:
+      type: secret
+      description: |
+        Juju secret containing the FreeIPA admin password for LDAP bind.
+        Create: juju add-secret freeipa-admin password=<value>
+        Grant:  juju grant-secret freeipa-admin keycloak-k8s
+        Set:    juju config keycloak-k8s freeipa-admin-password=secret:<id>
+    http-port:
+      type: int
+      default: 8080
+      description: HTTP port for Keycloak.
+    https-port:
+      type: int
+      default: 8443
+      description: HTTPS port for Keycloak.
+
+actions:
+  create-user:
+    description: |
+      Create a user in FreeIPA via its JSON-RPC API, then trigger a
+      Keycloak LDAP sync. The user will be available on all enrolled
+      FreeIPA client machines.
+    params:
+      username:
+        type: string
+        description: Username for the new user.
+      first-name:
+        type: string
+        description: First name.
+      last-name:
+        type: string
+        description: Last name.
+      email:
+        type: string
+        description: Email address.
+      password:
+        type: string
+        description: Initial password for the user.
+    required:
+      - username
+      - first-name
+      - last-name
+      - password
+
+provides:
+  oidc:
+    interface: oidc
+
+requires:
+  freeipa:
+    interface: freeipa
